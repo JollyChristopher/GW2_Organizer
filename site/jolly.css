@@ -1,0 +1,6 @@
+.jolly-no-wrap {
+    white-space: nowrap;
+    overflow: hidden;
+    width: 200px;
+    text-overflow: ellipsis;
+}

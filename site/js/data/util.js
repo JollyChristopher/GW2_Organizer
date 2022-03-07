@@ -24,21 +24,21 @@ class ApiLoader {
     return this.apiKey;
   }
 
-  getApiToken() {
+  getApiToken () {
     return this.apiKey;
   }
 
-  getData(resource) {
+  getData (resource) { // todo: cache data!
     return m.request({
       method: 'GET',
-      url: `https://api.guildwars2.com/v2/${resource}?v=latest&access_token=${api.getApiToken()}`,
+      url: `https://api.guildwars2.com/v2/${resource}?v=latest&access_token=${api.getApiToken()}`
     });
   }
 }
 
 export const api = new ApiLoader();
 export const PAGES = [
-  { id: '', name: 'Home', Page: SplashView },
-  { id: 'characters', name: 'Characters', Page: CharactersView },
-  { id: 'api', name: 'Set Up API', Page: ApiView },
+  { id: '', name: 'Home', page: SplashView },
+  { id: 'characters', name: 'Characters', page: CharactersView },
+  { id: 'api', name: 'Set Up API', page: ApiView }
 ];

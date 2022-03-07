@@ -2,7 +2,7 @@ import { PAGES } from './data/util.js';
 
 const routes = {};
 PAGES.forEach((page) => {
-  routes[`/${page.id}`] = new page.Page();
+  routes[`/${page.id}`] = page.page;
 });
 
 m.route(document.body, '/', routes);

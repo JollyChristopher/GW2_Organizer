@@ -1,8 +1,12 @@
-import { Navbar } from './navbar.js';
 import { api } from '../data/util.js';
+import { BaseView } from './base.js';
 
-export class ApiView {
-  constructor () {
+export class ApiView extends BaseView {
+  constructor() {
+    super('api');
+  }
+
+  oninit () {
     this.showApiKey = false;
     this.apiKey = api.getApiKey();
   }
@@ -15,9 +19,8 @@ export class ApiView {
     this.apiKey = apiKey;
   }
 
-  view () {
-    return m('main', [
-      m(new Navbar('api')),
+  page () {
+    return [
       m('div', { class: 'input-group mb-3' }, [
         m('div', { class: 'input-group-preprend' }, [
           m('button', {
@@ -48,6 +51,6 @@ export class ApiView {
           ])
         ])
       ])
-    ]);
+    ];
   }
 }

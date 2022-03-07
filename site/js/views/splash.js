@@ -1,11 +1,14 @@
-import { Navbar } from './navbar.js';
+import { BaseView } from './base.js';
 
-export class SplashView {
-  view () {
-    return m('main', [
-      m(new Navbar('')),
+export class SplashView extends BaseView {
+  constructor() {
+    super('');
+  }
+
+  page () {
+    return [
       m('h1', { class: 'title' }, 'My First app'),
-      m('a', { href: '#!/test' }, 'Enter!'),
-    ]);
+      m('a', { href: '#!/api' }, 'Enter!')
+    ];
   }
 }
