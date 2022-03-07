@@ -10,20 +10,70 @@ export class CharactersView extends BaseView {
 
   oninit () {
     this.characterNames = [];
+    this.characterData = {};
     this.activeCharacter = 0;
     this.loadCharacterNames();
   }
 
   loadCharacterNames () {
     api.getData('characters').then((data) => {
-      this.characterNames = data;
-    }).catch((error) => {
-      console.log(`Failed to load character names, likely no API key set: ${error}`);
+      this.characterNames = data.sort();
+      this.setCharacter(0);
     });
   }
 
-  setDisplay(name, index) {
-    if(index === this.activeCharacter) {
+  setCharacter(index) {
+    this.activeCharacter = index;
+    if(!this.characterData[this.characterNames[index]]) {
+      api.getData(`characters/${this.characterNames[index]}`).then((data) => {
+        this.characterData[this.characterNames[index]] = data;
+        m.redraw();
+      });
+    }
+  }
+
+  getCharacterData(index) {
+    return this.characterData[this.characterNames[index]];
+  }
+
+  isActiveCharacter(index) {
+    return index === this.activeCharacter;
+  }
+
+  isFirstCharacter(index) {
+    return index === 0;
+  }
+
+  isLastCharacter(index) {
+    return index === (this.characterNames.length - 1);
+  }
+
+  getPageSize() {
+    const ARROW_WIDTH = 34.1 * 2;
+    const PADDING = 15 * 2;
+    const CHARACTER_WIDTH = 200;
+    let screenWidth = $(window).width();
+
+    screenWidth -= ARROW_WIDTH;
+    screenWidth -= PADDING;
+
+    return Math.floor(screenWidth / CHARACTER_WIDTH);
+  }
+
+  activePage() {
+    return Math.floor(this.activeCharacter / this.getPageSize());
+  }
+
+  lastPage() {
+    return Math.floor(this.characterNames.length / this.getPageSize());
+  }
+
+  isActivePage(index) {
+    return Math.floor(index / this.getPageSize()) === this.activePage();
+  }
+
+  setCharacterNavDisplay(name, index) {
+    if(this.isActiveCharacter(index)) {
       return [
         name,
         m('span', { class: 'sr-only' }, '(current)')
@@ -33,30 +83,20 @@ export class CharactersView extends BaseView {
     }
   }
 
-  activePage() {
-    return Math.floor(this.activeCharacter / PAGE_SIZE);
-  }
-
-  lastPage() {
-    return Math.floor(this.characterNames.length / PAGE_SIZE);
-  }
-
-  isActivePage(index) {
-    return Math.floor(index / PAGE_SIZE) === this.activePage();
-  }
-
   getCurrentPagination() {
     let pageElement = [
-      m('li', { class: `page-item${this.activeCharacter === 0 ? ' disabled' : ''}` }, [
+      m('li', { class: `page-item${this.isFirstCharacter(this.activeCharacter) ? ' disabled' : ''}` }, [
         m('a', { 
           class: 'page-link', 
           href: '#', 
           'aria-label': 'Previous', 
-          tabindex: (this.activeCharacter === 0 ? '-1' : undefined), 
-          'aria-disabled': (this.activeCharacter === 0 ? true : undefined),
+          tabindex: (this.isFirstCharacter(this.activeCharacter) ? '-1' : undefined), 
+          'aria-disabled': (this.isFirstCharacter(this.activeCharacter) ? true : undefined),
           onclick: (event) => {
-            this.activeCharacter -= PAGE_SIZE;
-            if(this.activeCharacter < 0) this.activeCharacter = 0;
+            let index = this.activeCharacter;
+            index -= this.getPageSize();
+            if(index < 0) index = 0;
+            this.setCharacter(index);
             event.preventDefault();
           }
         }, [
@@ -68,31 +108,33 @@ export class CharactersView extends BaseView {
     this.characterNames.forEach((name, index) => {
       if(this.isActivePage(index)) {
         pageElement.push(m('li', { 
-          class: `page-item${index === this.activeCharacter ? ' active' : ''}`,
-          'aria-current': (index === this.activeCharacter ? 'page' : undefined)
+          class: `page-item${this.isActiveCharacter(index) ? ' active' : ''}`,
+          'aria-current': (this.isActiveCharacter(index) ? 'page' : undefined)
         }, [
           m('a', { 
             class: 'page-link jolly-no-wrap', 
             href: '#',
             onclick: (event) => {
-              this.activeCharacter = index;
+              this.setCharacter(index);
               event.preventDefault();
             }
-          }, this.setDisplay(name, index))
+          }, this.setCharacterNavDisplay(name, index))
         ]));
       }
     });
 
-    pageElement.push(m('li', { class: `page-item${this.activeCharacter === this.characterNames.length - 1 ? ' disabled' : ''}` }, [
+    pageElement.push(m('li', { class: `page-item${this.isLastCharacter(this.activeCharacter) ? ' disabled' : ''}` }, [
       m('a', { 
         class: 'page-link', 
         href: '#', 
         'aria-label': 'Next', 
-        tabindex: (this.activeCharacter === this.characterNames.length - 1 ? '-1' : undefined), 
-        'aria-disabled': (this.activeCharacter === this.characterNames.length - 1 ? true : undefined),
+        tabindex: (this.isLastCharacter(this.activeCharacter) ? '-1' : undefined), 
+        'aria-disabled': (this.isLastCharacter(this.activeCharacter) ? true : undefined),
         onclick: (event) => {
-          this.activeCharacter += PAGE_SIZE;
-          if(this.activeCharacter >= this.characterNames.length) this.activeCharacter = this.characterNames.length - 1;
+          let index = this.activeCharacter;
+          index += this.getPageSize();
+          if(index >= this.characterNames.length) index = this.characterNames.length - 1;
+          this.setCharacter(index);
           event.preventDefault();
         }
       }, [
@@ -102,12 +144,42 @@ export class CharactersView extends BaseView {
     return pageElement;
   }
 
-  page () {
+  getCharacterNav() {
     return [
       `Page ${this.activePage() + 1} of ${this.lastPage() + 1}`,
       m('nav', { 'aria-label': 'Page navigation' }, [
         m('ul', { class: 'pagination' }, this.getCurrentPagination())
       ])
     ];
+  }
+
+  getCharacter() {
+    let data = this.getCharacterData(this.activeCharacter);
+    if(!data) return [];
+    return [
+      m('div', { class: 'container' }, [
+        m('div', { class: 'row' }, [
+          m('div', { class: 'col-sm' }, [
+            m('div', { class: 'card' }, [
+              m('div', { class: 'card-body' }, [
+                m('h5', { class: 'card-title' }, data.name),
+                m('h6', { class: 'card-subtitle mb-2 text-muted' }, `Level ${data.level} ${data.gender} ${data.race} ${data.profession}`),
+                m('p', { class: 'card-text' }, `some text`)
+              ])
+            ])
+          ]),
+          m('div', { class: 'col-sm' }, []),
+          m('div', { class: 'col-sm' }, [])
+        ])
+      ]),
+      JSON.stringify(data)
+    ];
+  }
+
+  page () {
+    let pageContent = this.getCharacterNav();
+    pageContent = pageContent.concat(this.getCharacter());
+
+    return pageContent;
   }
 }
